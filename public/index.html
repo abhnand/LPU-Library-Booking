@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>LPU Library | Seat Booking</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="brand" href="#top">LPU <span>Library</span></a>
+      <nav><a href="#seats">Find a seat</a><a href="#books">Books</a></nav>
+    </header>
+
+    <main id="top">
+      <section class="hero">
+        <div>
+          <p class="eyebrow">STUDY SMARTER</p>
+          <h1>Your library seat,<br /><em>before you arrive.</em></h1>
+          <p class="hero-copy">See live seat availability across all six floors, reserve your study spot, and check book availability in one place.</p>
+          <a class="button primary" href="#seats">Find a seat <span>→</span></a>
+        </div>
+        <div class="hero-card" aria-label="Quick availability summary">
+          <div class="availability-orb"><strong id="heroAvailable">--</strong><span>seats free</span></div>
+          <p>Right now at LPU Library</p>
+          <small>Live status for a smoother library visit</small>
+        </div>
+      </section>
+
+      <section class="stats" aria-label="Library statistics">
+        <article><span id="totalSeats">--</span><p>Total seats</p></article>
+        <article><span id="availableSeats">--</span><p>Available now</p></article>
+        <article><span id="bookedSeats">--</span><p>Currently booked</p></article>
+        <article><span id="availableBooks">--</span><p>Books available</p></article>
+      </section>
+
+      <section class="section" id="seats">
+        <div class="section-heading">
+          <div><p class="eyebrow">SEAT RESERVATION</p><h2>Choose your study spot</h2></div>
+          <div class="floor-picker"><label for="floorSelect">Library floor</label><select id="floorSelect" aria-label="Choose library floor"></select></div>
+        </div>
+        <div class="legend"><span><i class="available-dot"></i> Available</span><span><i class="booked-dot"></i> Booked</span><span><i class="selected-dot"></i> Selected</span></div>
+        <div class="library-layout">
+          <div class="zone-label">WINDOW SIDE</div>
+          <div class="seat-grid" id="seatGrid" aria-live="polite"></div>
+          <div class="zone-label bottom">ENTRANCE / LIFT</div>
+        </div>
+        <p class="hint">Tip: click an available seat to reserve it. Green seats are available; red seats are occupied.</p>
+      </section>
+
+      <section class="section books-section" id="books">
+        <div class="section-heading"><div><p class="eyebrow">BOOK AVAILABILITY</p><h2>Find your next read</h2></div><input id="bookSearch" type="search" placeholder="Search title or author" aria-label="Search books" /></div>
+        <div id="bookList" class="book-list"></div>
+      </section>
+    </main>
+
+    <footer>Built for LPU Library Hackathon · A student project prototype</footer>
+
+    <dialog id="bookingDialog">
+      <form id="bookingForm" method="dialog">
+        <button class="close" type="button" id="closeDialog" aria-label="Close">×</button>
+        <p class="eyebrow">SEAT RESERVATION</p>
+        <h2>Book <span id="selectedSeatName"></span></h2>
+        <p id="seatDescription">Reserve this seat for your study session.</p>
+        <label>Your name<input id="studentName" name="studentName" maxlength="40" placeholder="e.g. Aanya Sharma" required /></label>
+        <label>Keep the seat until<select id="bookingUntil" name="bookingUntil" required><option value="Today, 2:00 PM">Today, 2:00 PM</option><option value="Today, 4:00 PM">Today, 4:00 PM</option><option value="Today, 6:00 PM">Today, 6:00 PM</option><option value="Today, 8:00 PM">Today, 8:00 PM</option></select></label>
+        <button class="button primary wide" type="submit">Confirm booking <span>→</span></button>
+      </form>
+    </dialog>
+    <div id="toast" role="status" aria-live="polite"></div>
+    <script src="app.js"></script>
+  </body>
+</html>
