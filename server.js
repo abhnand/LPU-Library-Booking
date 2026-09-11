@@ -1,4 +1,4 @@
-// LPU Library Seat Booking - beginner-friendly Node.js backend
+// LPU Campus Hub - beginner-friendly Node.js backend
 // No installation is required: Node.js has everything this file needs.
 
 const http = require('http');
@@ -45,6 +45,12 @@ function createInitialData() {
       { id: 4, title: 'Computer Networks', author: 'Andrew S. Tanenbaum', totalCopies: 10, availableCopies: 7, dueDate: null },
       { id: 5, title: 'Atomic Habits', author: 'James Clear', totalCopies: 12, availableCopies: 5, dueDate: '22 September 2026' },
       { id: 6, title: 'Database System Concepts', author: 'Silberschatz, Korth, Sudarshan', totalCopies: 7, availableCopies: 2, dueDate: '17 September 2026' }
+    ],
+    lostAndFound: [
+      { id: 'LF-1001', reportType: 'found', category: 'ID card', title: 'LPU Student ID card', description: 'Found near the self-checkout counter. The name is intentionally hidden for safety.', location: 'Central Library, Ground Floor', eventDate: '11 September 2026', reportedDate: '11 September 2026', status: 'open', reporterName: 'Library Help Desk', contact: 'Visit the library help desk', claimRequests: [] },
+      { id: 'LF-1002', reportType: 'lost', category: 'Accessories', title: 'Black wireless earbuds case', description: 'Small matte-black charging case, possibly left on a study table.', location: 'Block 34, First Floor', eventDate: '10 September 2026', reportedDate: '11 September 2026', status: 'open', reporterName: 'Student', contact: 'Claim through Campus Hub', claimRequests: [] },
+      { id: 'LF-1003', reportType: 'found', category: 'Keys', title: 'Set of two silver keys', description: 'Two keys on a blue LPU keychain.', location: 'Food Court', eventDate: '10 September 2026', reportedDate: '10 September 2026', status: 'open', reporterName: 'Campus Support', contact: 'Visit Campus Support Desk', claimRequests: [] },
+      { id: 'LF-1004', reportType: 'lost', category: 'Books', title: 'Engineering Mathematics notebook', description: 'Blue spiral notebook with handwritten formulae inside.', location: 'Uni Mall seating area', eventDate: '9 September 2026', reportedDate: '10 September 2026', status: 'claim-pending', reporterName: 'Student', contact: 'Claim through Campus Hub', claimRequests: [{ name: 'Demo Student', contact: 'demo@lpu.in', details: 'I can describe the first page and cover.', requestedAt: '10 September 2026' }] }
     ]
   };
 }
@@ -58,7 +64,20 @@ function ensureDataFile() {
 
 function readData() {
   ensureDataFile();
-  return JSON.parse(fs.readFileSync(DATA_FILE, 'utf8'));
+  const data = JSON.parse(fs.readFileSync(DATA_FILE, 'utf8'));
+  // Existing installations created before Lost & Found was added keep their old bookings.
+  let changed = false;
+  if (!Array.isArray(data.lostAndFound)) {
+    data.lostAndFound = createInitialData().lostAndFound;
+    changed = true;
+  }
+  data.lostAndFound.forEach(report => {
+    if (typeof report.publicContact !== 'boolean') { report.publicContact = true; changed = true; }
+    if (typeof report.imageData !== 'string') { report.imageData = ''; changed = true; }
+    if (typeof report.imageName !== 'string') { report.imageName = ''; changed = true; }
+  });
+  if (changed) saveData(data);
+  return data;
 }
 
 function saveData(data) {
@@ -87,11 +106,15 @@ function sendFile(response, filePath) {
 function readRequestBody(request) {
   return new Promise((resolve, reject) => {
     let body = '';
+    let tooLarge = false;
     request.on('data', chunk => {
+      if (tooLarge) return;
       body += chunk;
-      if (body.length > 1_000_000) request.destroy();
+      // Supports an optional photo up to 600 KB after the browser encodes it.
+      if (body.length > 900_000) tooLarge = true;
     });
     request.on('end', () => {
+      if (tooLarge) return reject(new Error('The photo is too large. Please choose an image smaller than 600 KB.'));
       try {
         resolve(body ? JSON.parse(body) : {});
       } catch {
@@ -101,12 +124,22 @@ function readRequestBody(request) {
   });
 }
 
+function publicReport(report) {
+  return {
+    ...report,
+    contact: report.publicContact ? report.contact : null,
+    // Claim details belong to Campus Support, never to other students.
+    claimRequests: []
+  };
+}
+
 function getStatistics(data) {
   return {
     totalSeats: data.seats.length,
     availableSeats: data.seats.filter(seat => seat.status === 'available').length,
     bookedSeats: data.seats.filter(seat => seat.status === 'booked').length,
-    availableBooks: data.books.reduce((sum, book) => sum + book.availableCopies, 0)
+    availableBooks: data.books.reduce((sum, book) => sum + book.availableCopies, 0),
+    activeReports: data.lostAndFound.filter(report => report.status === 'open').length
   };
 }
 
@@ -114,7 +147,7 @@ async function handleApi(request, response, pathname) {
   const data = readData();
 
   if (request.method === 'GET' && pathname === '/api/library') {
-    return sendJson(response, 200, { ...data, statistics: getStatistics(data) });
+    return sendJson(response, 200, { ...data, lostAndFound: data.lostAndFound.map(publicReport), statistics: getStatistics(data) });
   }
 
   const seatMatch = pathname.match(/^\/api\/seats\/([A-Z0-9-]+)\/(book|cancel)$/);
@@ -161,6 +194,66 @@ async function handleApi(request, response, pathname) {
     return sendJson(response, 200, { message: `${book.title} updated.`, book, statistics: getStatistics(data) });
   }
 
+  if (request.method === 'POST' && pathname === '/api/lost-found') {
+    const body = await readRequestBody(request);
+    const reportType = String(body.reportType || '').trim();
+    const category = String(body.category || '').trim();
+    const title = String(body.title || '').trim();
+    const description = String(body.description || '').trim();
+    const location = String(body.location || '').trim();
+    const eventDate = String(body.eventDate || '').trim();
+    const reporterName = String(body.reporterName || '').trim();
+    const contact = String(body.contact || '').trim();
+    const publicContact = body.publicContact === true;
+    const imageData = String(body.imageData || '');
+    const imageName = String(body.imageName || '').trim();
+
+    if (!['lost', 'found'].includes(reportType)) return sendJson(response, 400, { error: 'Choose whether the item is lost or found.' });
+    if (!category || !title || !description || !location || !eventDate || !reporterName || !contact) return sendJson(response, 400, { error: 'Please complete every field in the report.' });
+    if (title.length > 80 || description.length > 500 || location.length > 100 || reporterName.length > 60 || contact.length > 100) return sendJson(response, 400, { error: 'One of the fields is too long. Please shorten it and try again.' });
+    if (imageData && (!/^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/.test(imageData) || imageData.length > 850_000)) return sendJson(response, 400, { error: 'Upload a PNG, JPG or WebP image smaller than 600 KB.' });
+
+    const report = {
+      id: `LF-${Date.now()}`,
+      reportType,
+      category,
+      title,
+      description,
+      location,
+      eventDate,
+      reportedDate: new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }).format(new Date()),
+      status: 'open',
+      reporterName,
+      contact,
+      publicContact,
+      imageData,
+      imageName,
+      claimRequests: []
+    };
+    data.lostAndFound.unshift(report);
+    saveData(data);
+    return sendJson(response, 201, { message: `Report ${report.id} submitted. Campus Support can now help verify it.`, report: publicReport(report), statistics: getStatistics(data) });
+  }
+
+  const claimMatch = pathname.match(/^\/api\/lost-found\/([A-Za-z0-9-]+)\/claim$/);
+  if (claimMatch && request.method === 'POST') {
+    const report = data.lostAndFound.find(item => item.id === claimMatch[1]);
+    if (!report) return sendJson(response, 404, { error: 'Lost & Found report not found.' });
+    if (report.status !== 'open') return sendJson(response, 409, { error: 'This item already has a claim under verification.' });
+
+    const body = await readRequestBody(request);
+    const name = String(body.name || '').trim();
+    const contact = String(body.contact || '').trim();
+    const details = String(body.details || '').trim();
+    if (!name || !contact || !details) return sendJson(response, 400, { error: 'Please give your name, contact and proof of ownership.' });
+    if (name.length > 60 || contact.length > 100 || details.length > 500) return sendJson(response, 400, { error: 'One of the claim fields is too long. Please shorten it and try again.' });
+
+    report.claimRequests.push({ name, contact, details, requestedAt: new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }).format(new Date()) });
+    report.status = 'claim-pending';
+    saveData(data);
+    return sendJson(response, 200, { message: 'Claim request submitted. Campus Support will verify ownership before releasing the item.', report: publicReport(report), statistics: getStatistics(data) });
+  }
+
   return sendJson(response, 404, { error: 'API route not found.' });
 }
 
@@ -184,4 +277,4 @@ const server = http.createServer(async (request, response) => {
 });
 
 ensureDataFile();
-server.listen(PORT, () => console.log(`LPU Library app is running at http://localhost:${PORT}`));
+server.listen(PORT, () => console.log(`LPU Campus Hub is running at http://localhost:${PORT}`));

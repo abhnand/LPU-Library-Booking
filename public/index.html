@@ -3,21 +3,21 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>LPU Library | Seat Booking</title>
+    <title>LPU Campus Hub | Library & Lost Found</title>
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
     <header class="topbar">
-      <a class="brand" href="#top">LPU <span>Library</span></a>
-      <nav><a href="#seats">Find a seat</a><a href="#books">Books</a></nav>
+      <a class="brand" href="#top">LPU <span>Campus Hub</span></a>
+      <nav><a href="#seats">Find a seat</a><a href="#books">Books</a><a href="#lost-found">Lost &amp; Found</a></nav>
     </header>
 
     <main id="top">
       <section class="hero">
         <div>
-          <p class="eyebrow">STUDY SMARTER</p>
+          <p class="eyebrow">STUDY SMARTER · CONNECT SAFER</p>
           <h1>Your library seat,<br /><em>before you arrive.</em></h1>
-          <p class="hero-copy">See live seat availability across all six floors, reserve your study spot, and check book availability in one place.</p>
+          <p class="hero-copy">Reserve a library seat, check book availability, and reconnect lost items with their owners—one campus hub for LPU students.</p>
           <a class="button primary" href="#seats">Find a seat <span>→</span></a>
         </div>
         <div class="hero-card" aria-label="Quick availability summary">
@@ -32,6 +32,7 @@
         <article><span id="availableSeats">--</span><p>Available now</p></article>
         <article><span id="bookedSeats">--</span><p>Currently booked</p></article>
         <article><span id="availableBooks">--</span><p>Books available</p></article>
+        <article><span id="activeReports">--</span><p>Open item reports</p></article>
       </section>
 
       <section class="section" id="seats">
@@ -52,6 +53,20 @@
         <div class="section-heading"><div><p class="eyebrow">BOOK AVAILABILITY</p><h2>Find your next read</h2></div><input id="bookSearch" type="search" placeholder="Search title or author" aria-label="Search books" /></div>
         <div id="bookList" class="book-list"></div>
       </section>
+
+      <section class="section lost-found-section" id="lost-found">
+        <div class="section-heading lost-heading">
+          <div><p class="eyebrow">CAMPUS-WIDE LOST &amp; FOUND</p><h2>Help every item find its way home</h2></div>
+          <button class="button primary" id="openReportDialog" type="button">Report an item <span>+</span></button>
+        </div>
+        <div class="lost-found-note"><strong>Safe by design.</strong> A claim is not an automatic handover. Campus Support verifies proof of ownership before releasing an item.</div>
+        <div class="lost-found-controls">
+          <select id="reportTypeFilter" aria-label="Filter lost and found reports"><option value="all">All reports</option><option value="lost">Lost items</option><option value="found">Found items</option><option value="claim-pending">Claim verification pending</option></select>
+          <select id="categoryFilter" aria-label="Filter report categories"><option value="all">All categories</option><option value="ID card">ID cards</option><option value="Electronics">Electronics</option><option value="Accessories">Accessories</option><option value="Keys">Keys</option><option value="Books">Books &amp; notes</option><option value="Other">Other</option></select>
+          <input id="reportSearch" type="search" placeholder="Search item or location" aria-label="Search lost and found reports" />
+        </div>
+        <div id="lostFoundList" class="lost-found-list"></div>
+      </section>
     </main>
 
     <footer>Built for LPU Library Hackathon · A student project prototype</footer>
@@ -65,6 +80,35 @@
         <label>Your name<input id="studentName" name="studentName" maxlength="40" placeholder="e.g. Aanya Sharma" required /></label>
         <label>Keep the seat until<select id="bookingUntil" name="bookingUntil" required><option value="Today, 2:00 PM">Today, 2:00 PM</option><option value="Today, 4:00 PM">Today, 4:00 PM</option><option value="Today, 6:00 PM">Today, 6:00 PM</option><option value="Today, 8:00 PM">Today, 8:00 PM</option></select></label>
         <button class="button primary wide" type="submit">Confirm booking <span>→</span></button>
+      </form>
+    </dialog>
+    <dialog id="reportDialog">
+      <form id="reportForm" method="dialog">
+        <button class="close" type="button" data-close-dialog="reportDialog" aria-label="Close">×</button>
+        <p class="eyebrow">CAMPUS LOST &amp; FOUND</p>
+        <h2>Report an item</h2>
+        <p>Give useful details, but do not post a full ID number, password, or other sensitive information.</p>
+        <div class="form-columns"><label>Report type<select name="reportType" required><option value="lost">I lost an item</option><option value="found">I found an item</option></select></label><label>Category<select name="category" required><option value="ID card">ID card</option><option value="Electronics">Electronics</option><option value="Accessories">Accessories</option><option value="Keys">Keys</option><option value="Books">Books &amp; notes</option><option value="Other">Other</option></select></label></div>
+        <label>Item name<input name="title" maxlength="80" placeholder="e.g. Black water bottle" required /></label>
+        <label>Helpful description<textarea name="description" maxlength="500" placeholder="Colour, brand, identifying details—without sensitive information" required></textarea></label>
+        <div class="form-columns"><label>Last seen / found at<input name="location" maxlength="100" placeholder="e.g. Block 34, First Floor" required /></label><label>Date<select name="eventDate" required><option value="Today">Today</option><option value="Yesterday">Yesterday</option><option value="Earlier this week">Earlier this week</option></select></label></div>
+        <div class="form-columns"><label>Your name<input name="reporterName" maxlength="60" placeholder="Your name" required /></label><label>Your contact details<input name="contact" maxlength="100" placeholder="LPU email or phone" required /></label></div>
+        <label>Photo of the item (optional)<input id="reportImage" name="image" type="file" accept="image/png,image/jpeg,image/webp" /><small>PNG, JPG, or WebP only · maximum 600 KB</small></label>
+        <img id="imagePreview" class="image-preview" alt="Selected item preview" hidden />
+        <label class="consent"><input name="publicContact" type="checkbox" checked /> Show my contact details on this public report so people can reach me directly.</label>
+        <button class="button primary wide" type="submit">Submit report <span>→</span></button>
+      </form>
+    </dialog>
+    <dialog id="claimDialog">
+      <form id="claimForm" method="dialog">
+        <button class="close" type="button" data-close-dialog="claimDialog" aria-label="Close">×</button>
+        <p class="eyebrow">OWNERSHIP CHECK</p>
+        <h2>Claim <span id="claimItemName"></span></h2>
+        <p>Campus Support will review your proof before giving an item to anyone.</p>
+        <label>Your name<input name="name" maxlength="60" placeholder="Your name" required /></label>
+        <label>Contact<input name="contact" maxlength="100" placeholder="LPU email or phone" required /></label>
+        <label>Proof of ownership<textarea name="details" maxlength="500" placeholder="Describe a detail only the owner would know" required></textarea></label>
+        <button class="button primary wide" type="submit">Request verification <span>→</span></button>
       </form>
     </dialog>
     <div id="toast" role="status" aria-live="polite"></div>

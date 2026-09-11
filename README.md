@@ -1,6 +1,6 @@
 # LPU Library Seat Booking
 
-A beginner-friendly, full-stack hackathon prototype for a library seat reservation system. It shows a live seat map for six floors (150 seats on each floor), lets a student book an empty seat, and shows book availability.
+A beginner-friendly, full-stack hackathon prototype for an LPU campus hub. It shows a live seat map for six floors (150 seats on each floor), lets a student book an empty seat, shows book availability, and includes a campus-wide Lost & Found system.
 
 ## Run it in VS Code
 
@@ -20,6 +20,9 @@ No `npm install` is required for this first version.
 - Watch the availability numbers update immediately.
 - Search the book catalogue and see available copies and the next expected return date.
 - Click **Borrow demo** to simulate a book being borrowed.
+- Report a lost or found item from anywhere on campus.
+- Attach an optional item photo (PNG, JPG, or WebP up to 600 KB) and choose whether to share the reporter's name and contact details publicly.
+- Filter campus reports by type/category, and submit a claim request with proof of ownership. A claim stays **pending** until Campus Support verifies it.
 
 The initial occupied seats and books are **demo data**. After you make a booking, data is saved in `data/library-data.json` automatically. This file is intentionally ignored by Git, so every team member can keep their own local demo data.
 
@@ -62,7 +65,8 @@ For each later change: `git add .`, `git commit -m "Describe what changed"`, the
 2. Automatic cancellation if a student does not check in within 15 minutes.
 3. QR code at each seat for check-in and check-out.
 4. Real book data connected to LPU library’s catalogue, subject to library permission/API access.
-5. Admin dashboard showing peak times and occupancy by floor.
+5. Campus Support admin dashboard that verifies claims, marks items returned, and protects student contact details.
+6. QR codes at help desks to make a Lost & Found report in seconds.
 
 ## Important honest note
 
